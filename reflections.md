@@ -69,6 +69,9 @@ A third order polynomial is fitted to the waypoints so that the state of the car
 
 The vehicle state is also broght to a point where its initial position is `(x,y)=(0,0)` and its inital orientation is `psi=0` within the instantaneous vehicle coordinate system. 
 
+![A turn](media/self_driving_car_nanodegree_program 9_18_2017 6_01_15 AM.png "Model encountering a curve")
+
+
 ## Model Predictive Control with Latency
 
 > The student implements Model Predictive Control that handles a 100 millisecond latency. Student provides details on how they deal with latency.
