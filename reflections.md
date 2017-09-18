@@ -104,7 +104,7 @@ Furthermore the latency in control was taken into account in the model. This was
 ```cpp
 double px_delay = px + ds * cos(psi);
 double py_delay = py + ds * sin(psi);
-double psi_delay = psi + ds * -delta_0 / Lf);
+double psi_delay = psi + ds * -delta_0 / Lf;
 ```
 
 Note: This is done immediately after getting the message from the simulator and before the waypoints' transformation to vehicle coordinates. Therefore, there is no need to explicitly kinematically adjust either `cte` or `epsi` since the system is being evolved prior to the waypoints' transformation into the vehicle's coordinate system. This way, the initial state can still be given by the results from the quizzes.
