@@ -3,11 +3,15 @@
 #include <cppad/ipopt/solve.hpp>
 #include "Eigen-3.3/Eigen/Core"
 
+#include "json.hpp"
+// for convenience
+using json = nlohmann::json;
+
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 25;
-double dt = 0.05;
+size_t N = 10;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -23,8 +27,9 @@ const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 40 mph.
-double ref_v = 10;
+double ref_v = 100;
 
+bool live_json = true;
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
 // when one variable starts and another ends to make our lifes easier.
@@ -51,25 +56,52 @@ class FG_eval {
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
 
+
+    double w_cte_err, w_epsi_err, w_v_err, C_delta, C_a, C_ddelta, C_da;
+    if (live_json){
+      ifstream json_init_file("params/init.json");
+      json json_init;
+      json_init_file >> json_init;
+
+
+      w_cte_err = json_init["w_cte_err"];
+      w_epsi_err = json_init["w_epsi_err"];
+      w_v_err = json_init["w_v_err"];
+      C_delta = json_init["C_delta"];
+      C_a = json_init["C_a"];
+      C_ddelta = json_init["C_ddelta"];
+      C_da = json_init["C_da"];
+      ref_v = json_init["ref_v"];
+      
+    } else {
+      w_cte_err = 2000;
+      w_epsi_err = 2000;
+      w_v_err = 1.0;
+      C_delta = 5.0;
+      C_a = 5.0;
+      C_ddelta = 200.0;
+      C_da = 10.0;
+    }
+
     fg[0] = 0;
 
     // The part of the cost based on the reference state.
     for (int t = 0; t < N; t++) {
-      fg[0] += CppAD::pow(vars[cte_start + t], 2);
-      fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
+      fg[0] += w_cte_err*CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += w_epsi_err*CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += w_v_err*CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
     for (int t = 0; t < N - 1; t++) {
-      fg[0] += CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += CppAD::pow(vars[a_start + t], 2);
+      fg[0] += C_delta*CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += C_a*CppAD::pow(vars[a_start + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
     for (int t = 0; t < N - 2; t++) {
-      fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-      fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+      fg[0] += C_ddelta*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += C_da*CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
 
     //
@@ -114,9 +146,14 @@ class FG_eval {
       //AD<double> f0 = coeffs[0] + coeffs[1] * x0;
       AD<double> f0 = 0.0;
       for (int i = 0; i < coeffs.size(); i++) {
-        f0 += coeffs[i] * pow(x0, i);
+        f0 += coeffs[i] * CppAD::pow(x0, i);
       }
-      AD<double> psides0 = CppAD::atan(coeffs[1]);
+      AD<double> slope0 = 0.0;
+      for (int i = 1; i < coeffs.size(); i++) {
+        slope0 += i * coeffs[i] * CppAD::pow(x0, i - 1);
+      }
+
+      AD<double> psides0 = CppAD::atan(slope0);
 
       // Here's `x` to get you started.
       // The idea here is to constraint this value to be 0.
@@ -149,7 +186,29 @@ MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   bool ok = true;
-  size_t i;
+
+  double steer_lower, steer_upper, a_lower, a_upper;
+  if (live_json){
+    ifstream json_init_file("params/init.json");
+    json json_init;
+    json_init_file >> json_init;
+
+
+    steer_lower = json_init["steer_lower"];
+    steer_upper = json_init["steer_upper"];
+    a_lower = json_init["a_lower"];
+    a_upper = json_init["a_upper"];
+
+    
+  } else {
+    steer_lower = -0.436332;
+    steer_upper = 0.436332;
+    a_lower = -1.0;
+    a_upper = 1.0;
+
+  }
+
+  //size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
   Eigen::VectorXd x0 = state;
   double x = x0[0];
@@ -198,15 +257,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // degrees (values in radians).
   // NOTE: Feel free to change this to something else.
   for (int i = delta_start; i < a_start; i++) {
-    vars_lowerbound[i] = -0.436332;
-    vars_upperbound[i] = 0.436332;
+    vars_lowerbound[i] = steer_lower;
+    vars_upperbound[i] = steer_upper;
   }
 
   // Acceleration/decceleration upper and lower limits.
   // NOTE: Feel free to change this to something else.
   for (int i = a_start; i < n_vars; i++) {
-    vars_lowerbound[i] = -1.0;
-    vars_upperbound[i] = 1.0;
+    vars_lowerbound[i] = a_lower;
+    vars_upperbound[i] = a_upper;
   }
 
 
@@ -274,5 +333,13 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  return {solution.x[delta_start], solution.x[a_start]};
+  vector<double> result;
+
+  result.push_back(solution.x[delta_start]);
+  result.push_back(solution.x[a_start]);
+  for (int i = 0; i < N-1; i++){
+    result.push_back(solution.x[x_start+i+1]);
+    result.push_back(solution.x[y_start+i+1]);
+  }
+  return result;
 }
