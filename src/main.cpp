@@ -98,13 +98,32 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          int n_pts = ptsx.size();
+          // Change coordinate system
+          vector<double> ptsx_car;
+          vector<double> ptsy_car;
+          for (int i = 0; i < n_pts; i++){
+            double dx = ptsx[i] - px;
+            double dy = ptsy[i] - py;
+            double x_car = dx * cos(psi) + dy * sin(psi);
+            double y_car = -dx * sin(psi) + dy * cos(psi);
+            ptsx_car.push_back(x_car);
+            ptsy_car.push_back(y_car);
+          }
+          //auto coeffs = polyfit(, , 1);
+
+
           double steer_value;
           double throttle_value;
+
+          steer_value = -steer_value/deg2rad(25);
+          steer_value =  (steer_value < -1.0) ? -1.0 : steer_value;
+          steer_value =  steer_value > 1.0 ? 1.0 : steer_value;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = steer_value; // negative_value is an issue;
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
@@ -120,6 +139,8 @@ int main() {
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+          next_x_vals = ptsx_car;
+          next_y_vals = ptsy_car;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
