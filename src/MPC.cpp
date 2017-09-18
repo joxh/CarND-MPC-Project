@@ -23,7 +23,7 @@ const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 40 mph.
-double ref_v = 40;
+double ref_v = 10;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -111,7 +111,11 @@ class FG_eval {
       AD<double> delta0 = vars[delta_start + t - 1];
       AD<double> a0 = vars[a_start + t - 1];
 
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0;
+      //AD<double> f0 = coeffs[0] + coeffs[1] * x0;
+      AD<double> f0 = 0.0;
+      for (int i = 0; i < coeffs.size(); i++) {
+        f0 += coeffs[i] * pow(x0, i);
+      }
       AD<double> psides0 = CppAD::atan(coeffs[1]);
 
       // Here's `x` to get you started.

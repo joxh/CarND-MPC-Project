@@ -110,11 +110,28 @@ int main() {
             ptsx_car.push_back(x_car);
             ptsy_car.push_back(y_car);
           }
-          //auto coeffs = polyfit(, , 1);
 
 
-          double steer_value;
-          double throttle_value;
+          Eigen::VectorXd x_to_fit = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(ptsx_car.data(), ptsx_car.size());
+          
+          Eigen::VectorXd y_to_fit = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(ptsy_car.data(), ptsy_car.size());
+          
+          auto coeffs = polyfit(x_to_fit, y_to_fit, 3);
+
+          // The cross track error is calculated by evaluating at polynomial at x, f(x)
+          // and subtracting y.
+          double cte = -polyeval(coeffs, 0);
+          // Due to the sign starting at 0, the orientation error is -f'(x).
+          // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+          state << 0.0, 0.0, 0.0, v, cte, epsi; //x, y, psi, v ...
+
+          auto vars = mpc.Solve(state, coeffs);
+
+          double steer_value = vars[0];
+          double throttle_value = vars[1];
 
           steer_value = -steer_value/deg2rad(25);
           steer_value =  (steer_value < -1.0) ? -1.0 : steer_value;
@@ -160,7 +177,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
