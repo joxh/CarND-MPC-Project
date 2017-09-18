@@ -1,14 +1,14 @@
 {
-    "w_cte_err" : 3,
-    "w_epsi_err" : 2,
+    "w_cte_err" : 2,
+    "w_epsi_err" : 1,
     "w_v_err" : 1,
     "C_delta" : 250.0,
     "C_a" : 5.0,
-    "C_ddelta" : 5000.0,
+    "C_ddelta" : 8000.0,
     "C_da" : 10.0,
-    "ref_v" : 15,
-    "steer_lower": -0.4,
-    "steer_upper": 0.4,
+    "ref_v" : 10,
+    "steer_lower": -0.436332,
+    "steer_upper": 0.436332,
     "a_lower": -1.0,
     "a_upper": 1.0
 }

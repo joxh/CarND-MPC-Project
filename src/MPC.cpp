@@ -10,8 +10,8 @@ using json = nlohmann::json;
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
-double dt = 0.1;
+size_t N = 7;
+double dt = 0.3;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -27,9 +27,9 @@ const double Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 40 mph.
-double ref_v = 100;
+double ref_v = 10;
 
-bool live_json = true;
+bool live_json = false;
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
 // when one variable starts and another ends to make our lifes easier.
@@ -74,13 +74,14 @@ class FG_eval {
       ref_v = json_init["ref_v"];
       
     } else {
-      w_cte_err = 2000;
-      w_epsi_err = 2000;
+      w_cte_err = 2.0;
+      w_epsi_err = 1.0;
       w_v_err = 1.0;
-      C_delta = 5.0;
+      C_delta = 250.0;
       C_a = 5.0;
-      C_ddelta = 200.0;
+      C_ddelta = 8000.0;
       C_da = 10.0;
+      ref_v = 10;
     }
 
     fg[0] = 0;

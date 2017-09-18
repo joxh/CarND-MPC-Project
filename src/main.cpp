@@ -200,8 +200,8 @@ int main() {
           }
 
           //DEBUG: plot the points themsevles
-          next_x_vals = ptsx_car;
-          next_y_vals = ptsy_car;
+          //next_x_vals = ptsx_car;
+          //next_y_vals = ptsy_car;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
