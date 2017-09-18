@@ -35,6 +35,18 @@ cte' = ((f0 - y0) + (v * sin(epsi0) * dt));
 epsi' = ((psi - psides0) + v0 * delta0 / Lf * dt);
 ```
 
+which in the code looks like:
+```
+fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
+fg[1 + cte_start + t] =
+    cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+fg[1 + epsi_start + t] =
+    epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+```
+
 At each time step, the control paramters are determined by solving an optimization problem, where different costs are given to missing certain benchmarks of the calculated 
 
 ```cpp
@@ -53,6 +65,17 @@ C_ddelta = 8000.0; // Cost of steering change
 C_da = 10.0; // Cost of acceleration change
 ```
 
+The cost is imposed by adding terms for each timestep where deviations from the expected value are counted as weights:
+
+```cpp
+// The part of the cost based on the reference state.
+for (int t = 0; t < N; t++) {
+    fg[0] += w_cte_err*CppAD::pow(vars[cte_start + t], 2);
+    fg[0] += w_epsi_err*CppAD::pow(vars[epsi_start + t], 2);
+    fg[0] += w_v_err*CppAD::pow(vars[v_start + t] - ref_v, 2);
+}
+```
+
 The system is then solved for an optimal actuation values over a time series of length `N` and time step `dt`;
 
 ## Timestep Length and Elapsed Duration (N & dt)
@@ -60,7 +83,7 @@ The system is then solved for an optimal actuation values over a time series of 
 
 The choice of total number of timesteps and elapsed time between timesteps was made by balancing a few considerations. First of all, I didn't want too many time steps. If N were too large or dt too small, the calculation of optimal `delta` and `a` would have taken too long, and the controller would have failed.
 
-However, there needed to be enough timesteps that the horizon of what the car was considering would be long enough. If it was too short, then the sytem would not be able to see upcoming obsticals. On the other hand, if it was too long, then the car might make bad short term decisions to avoid obsticals that could easily be avoided later with relatively minor adjustments. In general I wanted the car to see about 2 seconds ahead of wherever it was going with as big a density as my system could allow. I therefore settled on `N=7` and `dt=.3`.
+However, there needed to be enough timesteps that the horizon of what the car was considering would be long enough. If it was too short, then the sytem would not be able to see upcoming obsticals. On the other hand, if it was too long, then the car might make bad short term decisions to avoid obsticals that could easily be avoided later with relatively minor adjustments. In general I wanted the car to see about 2 seconds ahead of wherever it was going with as big a density as my system could allow. I therefore settled on `N=7` and `dt=.3`. (I know this is very few points, but it was the most that my system could handle.)
 
 ## Polynomial Fitting and MPC Preprocessing
 > If the student preprocesses waypoints, the vehicle state, and/or actuators prior to the MPC procedure it is described.
