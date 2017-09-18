@@ -107,12 +107,11 @@ int main() {
           double delta_0 = j[1]["steering_angle"];
           double a_0 = j[1]["throttle"];
           double delay = 0.1; //seconds (specied in milliseconds below
-          double ds = v*delay + 0.5*a_0*delay*delay;
-
+          double ds = v*delay;
+          //Only to first order
           double px_delay = px + ds * cos(psi);
           double py_delay = py + ds * sin(psi);
-          // Calculate to second order
-          double psi_delay = psi + (ds * tan(-delta_0) / Lf);
+          double psi_delay = psi + ds * -delta_0 / Lf;
 
           
           
